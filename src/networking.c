@@ -97,7 +97,9 @@ void linkClient(client *c) {
      * a linear scan, but just a constant time operation. */
     c->client_list_node = listLast(server.clients);
     uint64_t id = htonu64(c->id);
-    raxInsert(server.clients_index,(unsigned char*)&id,sizeof(id),c,NULL);
+    raxInsert(server.clients_index,(unsigned char*)&id,sizeof(id),c,NULL);    
+    if (c->name)
+        notifyKeyspaceEvent(NOTIFY_GENERIC, "client_linked", c->name, c->db->id);
 }
 
 /* Initialize client authentication state.
@@ -1417,6 +1419,8 @@ int anyOtherSlaveWaitRdb(client *except_me) {
  * This is used by freeClient() and replicationCacheMaster(). */
 void unlinkClient(client *c) {
     listNode *ln;
+    if (c->name)
+        notifyKeyspaceEvent(NOTIFY_GENERIC, "client_unlinked", c->name, c->db->id);
 
     /* If this is marked as current client unset it. */
     if (server.current_client == c) server.current_client = NULL;
@@ -1480,7 +1484,7 @@ void unlinkClient(client *c) {
     }
 
     /* Clear the tracking status. */
-    if (c->flags & CLIENT_TRACKING) disableTracking(c);
+    if (c->flags & CLIENT_TRACKING) disableTracking(c);    
 }
 
 /* Clear the client state to resemble a newly connected client. */
@@ -2830,6 +2834,8 @@ int clientSetName(client *c, robj *name) {
     if (c->name) decrRefCount(c->name);
     c->name = name;
     incrRefCount(name);
+    if (c->name)
+        notifyKeyspaceEvent(NOTIFY_GENERIC, "client_setname", c->name, c->db->id);
     return C_OK;
 }
 
@@ -4394,6 +4400,8 @@ void evictClients(void) {
         listNode *ln = listNext(&bucket_iter);
         if (ln) {
             client *c = ln->value;
+            if (c->name)
+                notifyKeyspaceEvent(NOTIFY_GENERIC, "client_evicted", c->name, c->db->id);
             sds ci = catClientInfoString(sdsempty(),c);
             serverLog(LL_NOTICE, "Evicting client: %s", ci);
             freeClient(c);
