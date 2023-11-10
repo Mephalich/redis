@@ -72,6 +72,7 @@ unsigned char *lpDeleteRangeWithEntry(unsigned char *lp, unsigned char **p, unsi
 unsigned char *lpDeleteRange(unsigned char *lp, long index, unsigned long num);
 unsigned char *lpBatchDelete(unsigned char *lp, unsigned char **ps, unsigned long count);
 unsigned char *lpMerge(unsigned char **first, unsigned char **second);
+unsigned char *lpDup(unsigned char *lp);
 unsigned long lpLength(unsigned char *lp);
 unsigned char *lpGet(unsigned char *p, int64_t *count, unsigned char *intbuf);
 unsigned char *lpGetValue(unsigned char *p, unsigned int *slen, long long *lval);
@@ -81,6 +82,7 @@ unsigned char *lpLast(unsigned char *lp);
 unsigned char *lpNext(unsigned char *lp, unsigned char *p);
 unsigned char *lpPrev(unsigned char *lp, unsigned char *p);
 size_t lpBytes(unsigned char *lp);
+size_t lpEstimateBytesRepeatedInteger(long long lval, unsigned long rep);
 unsigned char *lpSeek(unsigned char *lp, long index);
 typedef int (*listpackValidateEntryCB)(unsigned char *p, unsigned int head_count, void *userdata);
 int lpValidateIntegrity(unsigned char *lp, size_t size, int deep,

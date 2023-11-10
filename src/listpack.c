@@ -732,7 +732,7 @@ unsigned char *lpFind(unsigned char *lp, unsigned char *p, unsigned char *s,
             /* Skip entry */
             skipcnt--;
 
-            /* Move to next entry, avoid use `lpNext` due to `ASSERT_INTEGRITY` in
+            /* Move to next entry, avoid use `lpNext` due to `lpAssertValidEntry` in
             * `lpNext` will call `lpBytes`, will cause performance degradation */
             p = lpSkip(p);
         }
@@ -1209,9 +1209,25 @@ unsigned char *lpMerge(unsigned char **first, unsigned char **second) {
     return target;
 }
 
+unsigned char *lpDup(unsigned char *lp) {
+    size_t lpbytes = lpBytes(lp);
+    unsigned char *newlp = lp_malloc(lpbytes);
+    memcpy(newlp, lp, lpbytes);
+    return newlp;
+}
+
 /* Return the total number of bytes the listpack is composed of. */
 size_t lpBytes(unsigned char *lp) {
     return lpGetTotalBytes(lp);
+}
+
+/* Returns the size of a listpack consisting of an integer repeated 'rep' times. */
+size_t lpEstimateBytesRepeatedInteger(long long lval, unsigned long rep) {
+    uint64_t enclen;
+    unsigned char intenc[LP_MAX_INT_ENCODING_LEN];
+    lpEncodeIntegerGetType(lval, intenc, &enclen);
+    unsigned long backlen = lpEncodeBacklen(NULL, enclen);
+    return LP_HDR_SIZE + (enclen + backlen) * rep + 1;
 }
 
 /* Seek the specified element and returns the pointer to the seeked element.
@@ -1677,7 +1693,7 @@ char *mixlist[] = {"hello", "foo", "quux", "1024"};
 char *intlist[] = {"4294967296", "-100", "100", "128000", 
                    "non integer", "much much longer non integer"};
 
-static unsigned char *createList() {
+static unsigned char *createList(void) {
     unsigned char *lp = lpNew(0);
     lp = lpAppend(lp, (unsigned char*)mixlist[1], strlen(mixlist[1]));
     lp = lpAppend(lp, (unsigned char*)mixlist[2], strlen(mixlist[2]));
@@ -1686,7 +1702,7 @@ static unsigned char *createList() {
     return lp;
 }
 
-static unsigned char *createIntList() {
+static unsigned char *createIntList(void) {
     unsigned char *lp = lpNew(0);
     lp = lpAppend(lp, (unsigned char*)intlist[2], strlen(intlist[2]));
     lp = lpAppend(lp, (unsigned char*)intlist[3], strlen(intlist[3]));
